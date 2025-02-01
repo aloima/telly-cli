@@ -32,6 +32,54 @@ func ReadStdin(out chan string, isQuitted chan bool) {
 	}
 }
 
+func InterpretValue(value string) string {
+	switch value[0] {
+	case '$':
+		var length int64
+		var at int64 = 1
+
+		for {
+			if value[at] != '\r' {
+				length = (int64(value[at]) - '0') + (length * 10)
+			} else {
+				at += 2 // pass '\n'
+				break
+			}
+
+			at += 1
+		}
+
+		return fmt.Sprintf("(bulk string)\n\"%s\"", value[at:(at+length)])
+
+	case '+':
+		var at int64 = 1
+
+		for {
+			if value[at] != '\r' {
+				at += 1
+			} else {
+				return fmt.Sprintf("(basic string)\n%s", value[1:at])
+			}
+		}
+
+	case '-':
+		var at int64 = 1
+
+		for {
+			if value[at] != '\r' {
+				at += 1
+			} else {
+				return fmt.Sprintf("(error)\n%s", value[1:at])
+			}
+		}
+
+	default:
+		return ""
+	}
+}
+
+const HELP = ("use \"help\" for helping\nuse \"quit\" to quit\nresponse format is `(type) value`\n")
+
 func StartClient() {
 	defer func() {
 		exec.Command("stty", "-f", "/dev/tty", "echo").Run()
@@ -46,7 +94,7 @@ func StartClient() {
 	stdin := make(chan string, 1)
 	quit := make(chan bool, 1)
 
-	fmt.Print("press \"h\" for helping\nuse \"quit\" to quit\n")
+	fmt.Print(HELP)
 
 	go ReadStdin(stdin, quit)
 
@@ -59,7 +107,10 @@ func StartClient() {
 			close(stdin)
 			fmt.Println("quitted")
 			break
+		} else if input == "help" {
+			fmt.Print(HELP)
 		} else {
+			// TODO: string escaping
 			arr := strings.Split(input, " ")
 			var values string
 
@@ -85,8 +136,7 @@ func StartClient() {
 				}
 			}
 
-			// TODO: parsing response
-			fmt.Print(response)
+			fmt.Println(InterpretValue(response))
 		}
 	}
 }
