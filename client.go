@@ -6,7 +6,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"strings"
 )
 
 func ReadStdin(stdin chan string, isQuitted chan bool) {
@@ -77,6 +76,40 @@ func InterpretValue(value string) string {
 
 const HELP = ("use \"help\" for helping\nuse \"quit\" or \"exit\" to quit\nuse \"clear\" to clear screen\nresponse format is `(type) value`\n")
 
+func SplitCommand(input string) []string {
+	var result []string
+	var escaping bool
+	var value string
+
+	for _, c := range input {
+		if c == ' ' && !escaping {
+			if value != "" {
+				result = append(result, value)
+				value = ""
+			}
+		} else if c == '"' {
+			if !escaping {
+				escaping = true
+			} else {
+				escaping = false
+
+				if value != "" {
+					result = append(result, value)
+					value = ""
+				}
+			}
+		} else {
+			value += string(c)
+		}
+	}
+
+	if value != "" {
+		result = append(result, value)
+	}
+
+	return result
+}
+
 func StartClient(host string, port int) {
 	url := fmt.Sprintf("%s:%d", host, port)
 	conn, err := net.Dial("tcp", url)
@@ -110,8 +143,7 @@ func StartClient(host string, port int) {
 			fmt.Print(HELP)
 
 		default:
-			// TODO: string escaping
-			arr := strings.Split(input, " ")
+			arr := SplitCommand(input)
 			var values string
 
 			for _, data := range arr {
