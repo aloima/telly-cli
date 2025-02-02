@@ -6,13 +6,10 @@ import (
 	"log"
 	"net"
 	"os"
-	"os/exec"
 	"strings"
 )
 
-func ReadStdin(out chan string, isQuitted chan bool) {
-	exec.Command("stty", "-f", "/dev/tty", "cbreak", "min", "1", "-echo").Run()
-
+func ReadStdin(stdin chan string, isQuitted chan bool) {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
@@ -27,7 +24,7 @@ func ReadStdin(out chan string, isQuitted chan bool) {
 				log.Fatal(err)
 			}
 
-			out <- text[:len(text)-1]
+			stdin <- text[:len(text)-1]
 		}
 	}
 }
@@ -78,13 +75,9 @@ func InterpretValue(value string) string {
 	}
 }
 
-const HELP = ("use \"help\" for helping\nuse \"quit\" to quit\nresponse format is `(type) value`\n")
+const HELP = ("use \"help\" for helping\nuse \"quit\" or \"exit\" to quit\nuse \"clear\" to clear screen\nresponse format is `(type) value`\n")
 
 func StartClient(host string, port int) {
-	defer func() {
-		exec.Command("stty", "-f", "/dev/tty", "echo").Run()
-	}()
-
 	url := fmt.Sprintf("%s:%d", host, port)
 	conn, err := net.Dial("tcp", url)
 
@@ -93,24 +86,30 @@ func StartClient(host string, port int) {
 	}
 
 	stdin := make(chan string, 1)
-	quit := make(chan bool, 1)
+	isQuitted := make(chan bool, 1)
 
 	fmt.Print(HELP)
 
-	go ReadStdin(stdin, quit)
+	go ReadStdin(stdin, isQuitted)
 
 	for {
 		fmt.Print(">> ")
 		input := <-stdin
 
-		if input == "quit" {
-			quit <- true
+		switch input {
+		case "quit", "exit":
+			isQuitted <- true
 			close(stdin)
 			fmt.Println("quitted")
-			break
-		} else if input == "help" {
+			return
+
+		case "clear":
+			fmt.Print("\033[H\033[2J")
+
+		case "help":
 			fmt.Print(HELP)
-		} else {
+
+		default:
 			// TODO: string escaping
 			arr := strings.Split(input, " ")
 			var values string
