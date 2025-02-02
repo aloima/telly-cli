@@ -1,27 +1,12 @@
 package main
 
 import (
-	"fmt"
-	"os"
+	"flag"
 )
 
 func main() {
-	switch len(os.Args) {
-	case 1:
-		StartClient()
+	host := flag.String("host", "127.0.0.1", "hostname or ip address")
+	port := flag.Int("port", 6379, "port number")
 
-	case 2:
-		arg := os.Args[1]
-
-		if arg == "help" {
-			// TODO
-			os.Exit(0)
-		} else {
-			fmt.Println("invalid argument")
-			os.Exit(1)
-		}
-
-	default:
-		fmt.Println("invalid count of arguments")
-	}
+	StartClient(*host, *port)
 }

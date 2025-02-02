@@ -80,12 +80,13 @@ func InterpretValue(value string) string {
 
 const HELP = ("use \"help\" for helping\nuse \"quit\" to quit\nresponse format is `(type) value`\n")
 
-func StartClient() {
+func StartClient(host string, port int) {
 	defer func() {
 		exec.Command("stty", "-f", "/dev/tty", "echo").Run()
 	}()
 
-	conn, err := net.Dial("tcp", "localhost:6379")
+	url := fmt.Sprintf("%s:%d", host, port)
+	conn, err := net.Dial("tcp", url)
 
 	if err != nil {
 		log.Fatal(err)
