@@ -34,18 +34,22 @@ func InterpretValue(value string) string {
 		var length int64
 		var at int64 = 1
 
-		for {
-			if value[at] != '\r' {
-				length = (int64(value[at]) - '0') + (length * 10)
-			} else {
-				at += 2 // pass '\n'
-				break
+		if value[1] == '-' && value[2] == '1' {
+			return "(null)"
+		} else {
+			for {
+				if value[at] != '\r' {
+					length = (int64(value[at]) - '0') + (length * 10)
+				} else {
+					at += 2 // pass '\n'
+					break
+				}
+
+				at += 1
 			}
 
-			at += 1
+			return fmt.Sprintf("(bulk string)\n\"%s\"", value[at:(at+length)])
 		}
-
-		return fmt.Sprintf("(bulk string)\n\"%s\"", value[at:(at+length)])
 
 	case '+':
 		var at int64 = 1
@@ -68,6 +72,9 @@ func InterpretValue(value string) string {
 				return fmt.Sprintf("(error)\n%s", value[1:at])
 			}
 		}
+
+	case '_':
+		return "(null)"
 
 	default:
 		return ""
