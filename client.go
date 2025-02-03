@@ -9,12 +9,12 @@ import (
 	"strings"
 )
 
-func ReadStdin(stdin chan string, isQuitted chan bool) {
+func ReadStdin(stdin chan string, quit chan bool) {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	for {
 		select {
-		case <-isQuitted:
+		case <-quit:
 			return
 
 		default:
@@ -114,13 +114,13 @@ const HELP = ("use \"help\" for helping\nuse \"quit\" or \"exit\" to quit\nuse \
 func SplitCommand(input string) []string {
 	var result []string
 	var escaping bool
-	var value string
+	var builder strings.Builder
 
 	for _, c := range input {
 		if c == ' ' && !escaping {
-			if value != "" {
-				result = append(result, value)
-				value = ""
+			if builder.Len() != 0 {
+				result = append(result, builder.String())
+				builder.Reset()
 			}
 		} else if c == '"' {
 			if !escaping {
@@ -128,18 +128,18 @@ func SplitCommand(input string) []string {
 			} else {
 				escaping = false
 
-				if value != "" {
-					result = append(result, value)
-					value = ""
+				if builder.Len() != 0 {
+					result = append(result, builder.String())
+					builder.Reset()
 				}
 			}
 		} else {
-			value += string(c)
+			builder.WriteRune(c)
 		}
 	}
 
-	if value != "" {
-		result = append(result, value)
+	if builder.Len() != 0 {
+		result = append(result, builder.String())
 	}
 
 	return result
@@ -154,11 +154,11 @@ func StartClient(host string, port int) {
 	}
 
 	stdin := make(chan string, 1)
-	isQuitted := make(chan bool, 1)
+	quit := make(chan bool, 1)
 
 	fmt.Print(HELP)
 
-	go ReadStdin(stdin, isQuitted)
+	go ReadStdin(stdin, quit)
 
 	for {
 		fmt.Print(">> ")
@@ -166,7 +166,7 @@ func StartClient(host string, port int) {
 
 		switch input {
 		case "quit", "exit":
-			isQuitted <- true
+			quit <- true
 			close(stdin)
 			fmt.Println("quitted")
 			return
@@ -191,6 +191,7 @@ func StartClient(host string, port int) {
 			fmt.Fprintf(conn, "*%d\r\n%s", len(arr), values)
 			buf := make([]byte, 1024)
 			var response string
+			var builder strings.Builder
 
 			for {
 				n, err := conn.Read(buf)
@@ -199,9 +200,10 @@ func StartClient(host string, port int) {
 					log.Fatal(err)
 				}
 
-				response += string(buf)
+				builder.Write(buf)
 
 				if n != 1024 {
+					response = builder.String()
 					break
 				}
 			}
