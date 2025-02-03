@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"math"
 	"net"
 	"os"
 	"strconv"
@@ -40,7 +41,7 @@ const (
 	Unknown     ValueType = "unknown"
 )
 
-func InterpretValue(at *int64, value string) (ValueType, string) {
+func InterpretValue(at *int64, value string, depth int) (ValueType, string) {
 	*at += 1
 
 	switch value[*at-1] {
@@ -125,12 +126,22 @@ func InterpretValue(at *int64, value string) (ValueType, string) {
 			}
 		}
 
-		i := 1
+		if count == 0 {
+			return Array, "(empty array)"
+		}
+
+		i := 2
 		var arr []string
+		offset := int(math.Log10(float64(count)))
+
+		{
+			_, subValue := InterpretValue(at, value, depth)
+			arr = append(arr, fmt.Sprintf("%s1) %s", strings.Repeat(" ", offset), subValue))
+		}
 
 		for i <= count {
-			_, subValue := InterpretValue(at, value)
-			arr = append(arr, fmt.Sprintf("%d) %s", i, subValue))
+			_, subValue := InterpretValue(at, value, depth+offset+3)
+			arr = append(arr, fmt.Sprintf("%s%d) %s", strings.Repeat(" ", depth+offset-int(math.Log10(float64(i)))), i, subValue))
 			i += 1
 		}
 
@@ -241,7 +252,7 @@ func StartClient(host string, port int) {
 			}
 
 			at := new(int64)
-			valueType, value := InterpretValue(at, response)
+			valueType, value := InterpretValue(at, response, 0)
 
 			if value == "" {
 				fmt.Printf("(%s)\n", valueType)
