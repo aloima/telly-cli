@@ -10,7 +10,7 @@ import (
 )
 
 func ReadStdin(stdin chan string, isQuitted chan bool) {
-	reader := bufio.NewReader(os.Stdin)
+	scanner := bufio.NewScanner(os.Stdin)
 
 	for {
 		select {
@@ -18,13 +18,11 @@ func ReadStdin(stdin chan string, isQuitted chan bool) {
 			return
 
 		default:
-			text, err := reader.ReadString('\n')
+			exist := scanner.Scan()
 
-			if err != nil {
-				log.Fatal(err)
+			if exist {
+				stdin <- scanner.Text()
 			}
-
-			stdin <- text[:len(text)-1]
 		}
 	}
 }
@@ -178,6 +176,9 @@ func StartClient(host string, port int) {
 
 		case "help":
 			fmt.Print(HELP)
+
+		case "":
+			continue
 
 		default:
 			arr := SplitCommand(input)
