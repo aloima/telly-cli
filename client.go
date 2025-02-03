@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -39,27 +40,30 @@ const (
 	Unknown     ValueType = "unknown"
 )
 
-func InterpretValue(value string) (ValueType, string) {
-	switch value[0] {
+func InterpretValue(at *int64, value string) (ValueType, string) {
+	*at += 1
+
+	switch value[*at-1] {
 	case '$':
 		var length int64
-		var at int64 = 1
 
-		if value[1] == '-' && value[2] == '1' {
+		if value[*at] == '-' && value[*at+1] == '1' {
+			*at += 4
 			return Null, ""
 		} else {
 			for {
-				if value[at] != '\r' {
-					length = (int64(value[at]) - '0') + (length * 10)
+				if value[*at] != '\r' {
+					length = (int64(value[*at]) - '0') + (length * 10)
 				} else {
-					at += 2 // pass '\n'
+					*at += 2
 					break
 				}
 
-				at += 1
+				*at += 1
 			}
 
-			response := value[at:(at + length)]
+			response := value[*at:(*at + length)]
+			*at += (length + 2)
 
 			if strings.Contains(response, "\n") {
 				return BulkString, response
@@ -69,24 +73,26 @@ func InterpretValue(value string) (ValueType, string) {
 		}
 
 	case '+':
-		var at int64 = 1
+		start := *at
 
 		for {
-			if value[at] != '\r' {
-				at += 1
+			if value[*at] != '\r' {
+				*at += 1
 			} else {
-				return BasicString, value[1:at]
+				*at += 2
+				return BasicString, value[start:(*at - 2)]
 			}
 		}
 
 	case '-':
-		var at int64 = 1
+		start := *at
 
 		for {
-			if value[at] != '\r' {
-				at += 1
+			if value[*at] != '\r' {
+				*at += 1
 			} else {
-				return ErrorString, value[1:at]
+				*at += 2
+				return ErrorString, value[start:(*at - 2)]
 			}
 		}
 
@@ -94,15 +100,41 @@ func InterpretValue(value string) (ValueType, string) {
 		return Null, ""
 
 	case ':':
-		var at int64 = 1
+		start := *at
 
 		for {
-			if value[at] != '\r' {
-				at += 1
+			if value[*at] != '\r' {
+				*at += 1
 			} else {
-				return Number, value[1:at]
+				*at += 2
+				return Number, value[start:(*at - 2)]
 			}
 		}
+
+	case '*':
+		start := *at
+		var count int
+
+		for {
+			if value[*at] != '\r' {
+				*at += 1
+			} else {
+				count, _ = strconv.Atoi(value[start:*at])
+				*at += 2
+				break
+			}
+		}
+
+		i := 1
+		var arr []string
+
+		for i <= count {
+			_, subValue := InterpretValue(at, value)
+			arr = append(arr, fmt.Sprintf("%d) %s", i, subValue))
+			i += 1
+		}
+
+		return Array, strings.Join(arr, "\n")
 
 	default:
 		return Unknown, ""
@@ -208,7 +240,8 @@ func StartClient(host string, port int) {
 				}
 			}
 
-			valueType, value := InterpretValue(response)
+			at := new(int64)
+			valueType, value := InterpretValue(at, response)
 
 			if value == "" {
 				fmt.Printf("(%s)\n", valueType)
