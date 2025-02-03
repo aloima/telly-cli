@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strings"
 )
 
 func ReadStdin(stdin chan string, isQuitted chan bool) {
@@ -28,14 +29,26 @@ func ReadStdin(stdin chan string, isQuitted chan bool) {
 	}
 }
 
-func InterpretValue(value string) string {
+type ValueType string
+
+const (
+	Null        ValueType = "null"
+	ErrorString ValueType = "error"
+	BasicString ValueType = "basic string"
+	BulkString  ValueType = "bulk string"
+	Number      ValueType = "number"
+	Array       ValueType = "array"
+	Unknown     ValueType = "unknown"
+)
+
+func InterpretValue(value string) (ValueType, string) {
 	switch value[0] {
 	case '$':
 		var length int64
 		var at int64 = 1
 
 		if value[1] == '-' && value[2] == '1' {
-			return "(null)"
+			return Null, ""
 		} else {
 			for {
 				if value[at] != '\r' {
@@ -48,7 +61,13 @@ func InterpretValue(value string) string {
 				at += 1
 			}
 
-			return fmt.Sprintf("(bulk string)\n\"%s\"", value[at:(at+length)])
+			response := value[at:(at + length)]
+
+			if strings.Contains(response, "\n") {
+				return BulkString, response
+			} else {
+				return BulkString, fmt.Sprintf("\"%s\"", response)
+			}
 		}
 
 	case '+':
@@ -58,7 +77,7 @@ func InterpretValue(value string) string {
 			if value[at] != '\r' {
 				at += 1
 			} else {
-				return fmt.Sprintf("(basic string)\n%s", value[1:at])
+				return BasicString, value[1:at]
 			}
 		}
 
@@ -69,19 +88,30 @@ func InterpretValue(value string) string {
 			if value[at] != '\r' {
 				at += 1
 			} else {
-				return fmt.Sprintf("(error)\n%s", value[1:at])
+				return ErrorString, value[1:at]
 			}
 		}
 
 	case '_':
-		return "(null)"
+		return Null, ""
+
+	case ':':
+		var at int64 = 1
+
+		for {
+			if value[at] != '\r' {
+				at += 1
+			} else {
+				return Number, value[1:at]
+			}
+		}
 
 	default:
-		return ""
+		return Unknown, ""
 	}
 }
 
-const HELP = ("use \"help\" for helping\nuse \"quit\" or \"exit\" to quit\nuse \"clear\" to clear screen\nresponse format is `(type) value`\n")
+const HELP = ("use \"help\" for helping\nuse \"quit\" or \"exit\" to quit\nuse \"clear\" to clear screen\nresponse format is `(type)\\nvalue`\n")
 
 func SplitCommand(input string) []string {
 	var result []string
@@ -175,7 +205,19 @@ func StartClient(host string, port int) {
 				}
 			}
 
-			fmt.Println(InterpretValue(response))
+			valueType, value := InterpretValue(response)
+
+			if value == "" {
+				fmt.Printf("(%s)\n", valueType)
+			} else if valueType == BulkString {
+				if strings.Contains(value, "\n") {
+					fmt.Printf("(%s)\n%s", valueType, value)
+				} else {
+					fmt.Printf("(%s)\n%s\n", valueType, value)
+				}
+			} else {
+				fmt.Printf("(%s)\n%s\n", valueType, value)
+			}
 		}
 	}
 }
