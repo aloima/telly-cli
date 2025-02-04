@@ -38,6 +38,8 @@ const (
 	BulkString  ValueType = "bulk string"
 	Number      ValueType = "number"
 	Array       ValueType = "array"
+	Map         ValueType = "map"
+	Boolean     ValueType = "boolean"
 	Unknown     ValueType = "unknown"
 )
 
@@ -146,6 +148,52 @@ func InterpretValue(at *int64, value string, depth int) (ValueType, string) {
 		}
 
 		return Array, strings.Join(arr, "\n")
+
+	case '%':
+		start := *at
+		var count int
+
+		for {
+			if value[*at] != '\r' {
+				*at += 1
+			} else {
+				count, _ = strconv.Atoi(value[start:*at])
+				*at += 2
+				break
+			}
+		}
+
+		if count == 0 {
+			return Map, "(empty map)"
+		}
+
+		i := 2
+		var arr []string
+		offset := int(math.Log10(float64(count)))
+
+		{
+			_, subKey := InterpretValue(at, value, depth)
+			_, subValue := InterpretValue(at, value, depth)
+			arr = append(arr, fmt.Sprintf("%s1| %s => %s", strings.Repeat(" ", offset), subKey, subValue))
+		}
+
+		for i <= count {
+			_, subKey := InterpretValue(at, value, depth+offset+3)
+			_, subValue := InterpretValue(at, value, depth+offset+3)
+			arr = append(arr, fmt.Sprintf("%s%d| %s => %s", strings.Repeat(" ", depth+offset-int(math.Log10(float64(i)))), i, subKey, subValue))
+			i += 1
+		}
+
+		return Map, strings.Join(arr, "\n")
+
+	case '#':
+		data := value[*at]
+
+		if data == 't' {
+			return Boolean, "true"
+		}
+
+		return Boolean, "false"
 
 	default:
 		return Unknown, ""
