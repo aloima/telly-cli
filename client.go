@@ -36,6 +36,7 @@ const (
 	ErrorString ValueType = "error"
 	BasicString ValueType = "basic string"
 	BulkString  ValueType = "bulk string"
+	Double      ValueType = "double"
 	Integer     ValueType = "integer"
 	BigInteger  ValueType = "big integer"
 	Array       ValueType = "array"
@@ -102,6 +103,32 @@ func InterpretValue(at *int64, value string, depth int) (ValueType, string) {
 
 	case '_':
 		return Null, ""
+
+	case ',':
+		start := *at
+
+		for {
+			if value[*at] != '\r' {
+				*at += 1
+			} else {
+				data := value[start:*at]
+				*at += 2
+
+				switch data {
+				case "inf":
+					return Double, "Infinity"
+
+				case "-inf":
+					return Double, "-Infinity"
+
+				case "nan":
+					return Double, "Not a Number"
+
+				default:
+					return Double, value[start:(*at - 2)]
+				}
+			}
+		}
 
 	case ':':
 		start := *at
