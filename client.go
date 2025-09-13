@@ -37,6 +37,7 @@ const (
 	BasicString ValueType = "basic string"
 	BulkString  ValueType = "bulk string"
 	Number      ValueType = "number"
+	BigNumber		ValueType = "big number"
 	Array       ValueType = "array"
 	Map         ValueType = "map"
 	Boolean     ValueType = "boolean"
@@ -111,6 +112,18 @@ func InterpretValue(at *int64, value string, depth int) (ValueType, string) {
 			} else {
 				*at += 2
 				return Number, value[start:(*at - 2)]
+			}
+		}
+
+	case '(':
+		start := *at
+
+		for {
+			if value[*at] != '\r' {
+				*at += 1
+			} else {
+				*at += 2
+				return BigNumber, value[start:(*at - 2)]
 			}
 		}
 
