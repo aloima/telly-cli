@@ -36,8 +36,8 @@ const (
 	ErrorString ValueType = "error"
 	BasicString ValueType = "basic string"
 	BulkString  ValueType = "bulk string"
-	Number      ValueType = "number"
-	BigNumber		ValueType = "big number"
+	Integer     ValueType = "integer"
+	BigInteger  ValueType = "big integer"
 	Array       ValueType = "array"
 	Map         ValueType = "map"
 	Boolean     ValueType = "boolean"
@@ -111,7 +111,7 @@ func InterpretValue(at *int64, value string, depth int) (ValueType, string) {
 				*at += 1
 			} else {
 				*at += 2
-				return Number, value[start:(*at - 2)]
+				return Integer, value[start:(*at - 2)]
 			}
 		}
 
@@ -123,7 +123,7 @@ func InterpretValue(at *int64, value string, depth int) (ValueType, string) {
 				*at += 1
 			} else {
 				*at += 2
-				return BigNumber, value[start:(*at - 2)]
+				return BigInteger, value[start:(*at - 2)]
 			}
 		}
 
