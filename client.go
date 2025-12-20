@@ -240,7 +240,11 @@ func InterpretValue(at *int64, value string, depth int) (ValueType, string) {
 	}
 }
 
-const HELP = ("use \"help\" for helping\nuse \"quit\" or \"exit\" to quit\nuse \"clear\" to clear screen\nresponse format is `(type)\\nvalue`\n")
+const HELP = (`use "help" for helping
+use "quit" or \"exit\" to quit
+use "clear" to clear screen
+response format is ` + "`" + "(type)\\nvalue" + "`" + `
+`)
 
 func SplitCommand(input string) []string {
 	var result []string
@@ -277,8 +281,8 @@ func SplitCommand(input string) []string {
 }
 
 func StartClient(host string, port int) {
-	url := fmt.Sprintf("%s:%d", host, port)
-	conn, err := net.Dial("tcp", url)
+	addr := net.JoinHostPort(host, fmt.Sprint(port))
+	conn, err := net.Dial("tcp", addr)
 
 	if err != nil {
 		log.Fatal(err)
