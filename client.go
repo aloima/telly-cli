@@ -241,7 +241,7 @@ func InterpretValue(at *int64, value string, depth int) (ValueType, string) {
 }
 
 const HELP = (`use "help" for helping
-use "quit" or \"exit\" to quit
+use "quit" or "exit" to quit
 use "clear" to clear screen
 response format is ` + "`" + "(type)\\nvalue" + "`" + `
 `)
