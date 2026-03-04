@@ -178,13 +178,24 @@ func InterpretValue(at *int64, value string, depth int) (ValueType, string) {
 		offset := int(math.Log10(float64(count)))
 
 		{
-			_, subValue := InterpretValue(at, value, depth)
-			arr = append(arr, fmt.Sprintf("%s1) %s", strings.Repeat(" ", offset), subValue))
+			subType, subValue := InterpretValue(at, value, depth)
+
+			if subValue == "" {
+				arr = append(arr, fmt.Sprintf("%s1) %s", strings.Repeat(" ", offset), subType))
+			} else {
+				arr = append(arr, fmt.Sprintf("%s1) %s", strings.Repeat(" ", offset), subValue))
+			}
 		}
 
 		for i <= count {
-			_, subValue := InterpretValue(at, value, depth+offset+3)
-			arr = append(arr, fmt.Sprintf("%s%d) %s", strings.Repeat(" ", depth+offset-int(math.Log10(float64(i)))), i, subValue))
+			subType, subValue := InterpretValue(at, value, depth+offset+3)
+
+			if subValue == "" {
+				arr = append(arr, fmt.Sprintf("%s%d) %s", strings.Repeat(" ", depth+offset-int(math.Log10(float64(i)))), i, subType))
+			} else {
+				arr = append(arr, fmt.Sprintf("%s%d) %s", strings.Repeat(" ", depth+offset-int(math.Log10(float64(i)))), i, subValue))
+			}
+
 			i += 1
 		}
 
@@ -214,14 +225,25 @@ func InterpretValue(at *int64, value string, depth int) (ValueType, string) {
 
 		{
 			_, subKey := InterpretValue(at, value, depth)
-			_, subValue := InterpretValue(at, value, depth)
-			arr = append(arr, fmt.Sprintf("%s1| %s => %s", strings.Repeat(" ", offset), subKey, subValue))
+			subType, subValue := InterpretValue(at, value, depth)
+
+			if subValue == "" {
+				arr = append(arr, fmt.Sprintf("%s1| %s => %s", strings.Repeat(" ", offset), subKey, subType))
+			} else {
+				arr = append(arr, fmt.Sprintf("%s1| %s => %s", strings.Repeat(" ", offset), subKey, subValue))
+			}
 		}
 
 		for i <= count {
 			_, subKey := InterpretValue(at, value, depth+offset+3)
-			_, subValue := InterpretValue(at, value, depth+offset+3)
-			arr = append(arr, fmt.Sprintf("%s%d| %s => %s", strings.Repeat(" ", depth+offset-int(math.Log10(float64(i)))), i, subKey, subValue))
+			subType, subValue := InterpretValue(at, value, depth+offset+3)
+
+			if subValue == "" {
+				arr = append(arr, fmt.Sprintf("%s%d| %s => %s", strings.Repeat(" ", depth+offset-int(math.Log10(float64(i)))), i, subKey, subType))
+			} else {
+				arr = append(arr, fmt.Sprintf("%s%d| %s => %s", strings.Repeat(" ", depth+offset-int(math.Log10(float64(i)))), i, subKey, subValue))
+			}
+
 			i += 1
 		}
 
