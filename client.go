@@ -102,6 +102,7 @@ func InterpretValue(at *int64, value string, depth int) (ValueType, string) {
 		}
 
 	case '_':
+		*at += 2
 		return Null, ""
 
 	case ',':
@@ -228,6 +229,7 @@ func InterpretValue(at *int64, value string, depth int) (ValueType, string) {
 
 	case '#':
 		data := value[*at]
+		*at += 3
 
 		if data == 't' {
 			return Boolean, "true"
